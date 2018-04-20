@@ -1,0 +1,6 @@
+import os, json
+d = {'_pacmel_dir': _pacmel_dir,
+     '_pacmel_files': _pacmel_files}
+tmp_json = os.path.join(os.getenv('TEMP'), '%s.json' % 'pacmel_test_c6af51ca-3b34-457a-9dba-626d0de3e98d')
+with open(tmp_json, 'w') as fob:
+    json.dump(d, fob)

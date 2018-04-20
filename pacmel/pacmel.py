@@ -93,3 +93,35 @@ def pac(files, mel, code_to_exec):
     # write the mel file
     with open(mel, 'w') as fobj:
         fobj.write(mel_code)
+
+
+def pac_dir(path, mel, code_to_exec):
+    """
+    Given a path to a directory it will assemble all the file/folder
+    structure as list of tuples like::
+
+        [(fullpath/dirname/filename1, dirname/filename1),
+         (fullpath/dirname/filename2, dirname/filename2),
+         ...]
+
+    and hand it to pacmel.
+
+    :param str path: String path to existing.
+    :param str mel: target mel file path
+    :param str code_to_exec: String snippet to execute after the extraction, or
+        string path to a .py-file which would be read instead.
+    """
+    if not os.path.isdir(path):
+        raise RuntimeError('Given path is not an existing directory! (%s)' % path)
+
+    parent_dir = os.path.dirname(path)
+    file_tuples = []
+    for dirpath, _, filenames in os.walk(path):
+        for filename in filenames:
+            filepath = os.path.join(dirpath, filename)
+            arcpath = os.path.relpath(filepath, parent_dir)
+            file_tuples.append((filepath, arcpath))
+    if not file_tuples:
+        raise RuntimeError('There were no files to collect at given path! (%s)' % path)
+
+    pac(file_tuples, mel, code_to_exec)
