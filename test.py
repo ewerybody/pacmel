@@ -10,6 +10,17 @@ import unittest
 from maya import mel
 
 import pacmel
+import time
+
+
+TESTCODE = """
+d = {'_pacmel_dir': _pacmel_dir,
+     '_pacmel_files': _pacmel_files}
+tmp_json = '%s'
+import json
+with open(tmp_json, 'w') as fob:
+    json.dump(d, fob)
+"""
 
 
 class Test(unittest.TestCase):
@@ -31,13 +42,7 @@ class Test(unittest.TestCase):
         tmp_json = os.path.join(os.getenv('TEMP'), '%s.json' % rndstr)
         self.assertFalse(os.path.isfile(tmp_json))
 
-        code_to_exec = (
-            "d = {'_pacmel_dir': _pacmel_dir,\n"
-            "     '_pacmel_files': _pacmel_files}\n"
-            "tmp_json = '%s'\n"
-            "import json\n"
-            "with open(tmp_json, 'w') as fob:\n"
-            "    json.dump(d, fob)\n" % tmp_json)
+        code_to_exec = TESTCODE % tmp_json
 
         pacmel.pac(files, target_mel, code_to_exec)
         self.assertTrue(os.path.isfile(target_mel))
@@ -67,7 +72,11 @@ class Test(unittest.TestCase):
             self.assertFalse(os.path.isdir(path))
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' or __name__ == 'test':
+    t0 = time.time()
     import maya.standalone
     maya.standalone.initialize(name='python')
+    print('\nstandalone.init took: %.1fsec' % (time.time() - t0))
+
+if __name__ == '__main__':
     unittest.main(verbosity=2)
