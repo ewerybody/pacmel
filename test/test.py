@@ -147,11 +147,11 @@ def cleanup(files, dirs):
 
 def file_hash(path):
     with open(path, 'rb') as fob:
-        buff = fob.read(262144)
+        buff = fob.read(65536)
         hashob = hashlib.sha256()
         while len(buff):
             hashob.update(buff)
-            buff = fob.read(262144)
+            buff = fob.read(65536)
         return hashob.digest()
 
 

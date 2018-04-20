@@ -85,10 +85,9 @@ def pac(files, mel, code_to_exec):
     mel_code += 'string $codeblob = "\\\n' + codeblob + '";\n'
 
     py_code = py_code.format(zipname='pacmel_%s' % str(uuid.uuid4()))
-    py_code = py_code.replace('\r\n', '\\n\\\n')
-
-    c = """python("%s");""" % py_code
-    mel_code += c + '\n'
+    replace = '\r\n' if '\r\n' in py_code else '\n'
+    py_code = py_code.replace(replace, '\\n\\\n')
+    mel_code += 'python("' + py_code + '");\n'
 
     # write the mel file
     with open(mel, 'w') as fobj:
