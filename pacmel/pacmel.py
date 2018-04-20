@@ -19,6 +19,7 @@ import os
 import uuid
 import base64
 import zipfile
+from StringIO import StringIO
 
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -61,18 +62,14 @@ def pac(files, mel, code_to_exec):
         else:
             file_tuples.append((filepath, arcname))
 
-    # zip the given files
-    tmp_zip_name = 'pacmel_%s.zip' % str(uuid.uuid4())
-    tmp_zip_path = os.path.join(os.getenv('TEMP'), tmp_zip_name)
-    with zipfile.ZipFile(tmp_zip_path, 'w', zipfile.ZIP_DEFLATED) as tmpzip:
+    # zip the given files to memory
+    zip_file_obj = StringIO()
+    with zipfile.ZipFile(zip_file_obj, 'w', zipfile.ZIP_DEFLATED) as tmpzip:
         for filepath, arcname in file_tuples:
             tmpzip.write(filepath, arcname)
 
     # encode into mel
-    with open(tmp_zip_path, 'rb') as fobj:
-        src_data = fobj.read()
-    os.remove(tmp_zip_path)
-    mel_string = base64.encodestring(src_data).replace('\n', '\\\n')
+    mel_string = base64.encodestring(zip_file_obj.getvalue()).replace('\n', '\\\n')
     mel_code = 'string $blob = "%s";\n\n' % mel_string
 
     # append and format python code
@@ -88,6 +85,7 @@ def pac(files, mel, code_to_exec):
     code_to_exec = code_to_exec.replace('\\', '\\\\')
     code_to_exec = code_to_exec.replace('"', '\\')
 
+    tmp_zip_name = 'pacmel_%s.zip' % str(uuid.uuid4())
     py_code = py_code.format(zipname=tmp_zip_name,
                              code=code_to_exec)
 
