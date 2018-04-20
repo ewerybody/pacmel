@@ -41,9 +41,6 @@ def pac(files, mel, code_to_exec):
     :param str mel: target mel file path
     :param str code_to_exec: String snippet to execute after the extraction, or
         string path to a .py-file which would be read instead.
-    :param bool pack_flat: to strip the paths from the packed files so that they
-        are in the zip root. False is the standard zip behavior which retains the
-        path minus the drive letter.
     """
     if not isinstance(files, list):
         raise TypeError('Please provide files as a list of paths'
@@ -64,15 +61,15 @@ def pac(files, mel, code_to_exec):
 
     # zip the given files to memory
     zip_file_obj = StringIO()
-    with zipfile.ZipFile(zip_file_obj, 'w', zipfile.ZIP_DEFLATED) as tmpzip:
+    with zipfile.ZipFile(zip_file_obj, 'w', zipfile.ZIP_DEFLATED) as zipzob:
         for filepath, arcname in file_tuples:
-            tmpzip.write(filepath, arcname)
+            zipzob.write(filepath, arcname)
 
     # encode into mel
-    mel_string = base64.encodestring(zip_file_obj.getvalue()).replace('\n', '\\\n')
-    mel_code = 'string $zipblob = "\\\n%s";\n' % mel_string
+    zipblob = base64.encodestring(zip_file_obj.getvalue()).replace('\n', '\\\n')
+    mel_code = 'string $zipblob = "\\\n' + zipblob + '";\n'
 
-    # append and format python code
+    # append python code
     with open(_TEMPLATE_PATH, 'r') as fobj:
         py_code = fobj.read()
 
@@ -80,15 +77,14 @@ def pac(files, mel, code_to_exec):
         with open(code_to_exec, 'r') as fobj:
             code_to_exec = fobj.read()
 
-    # make the code snippet work through the packing
-    code_to_exec = code_to_exec.strip().replace('\n', '\r\n    ')
-    code_to_exec = code_to_exec.replace('\\', '\\\\')
-    code_to_exec = code_to_exec.replace('"', '\\')
+    # create code blob, put it to mel code as well
+    zip_code_obj = StringIO()
+    with zipfile.ZipFile(zip_code_obj, 'w', zipfile.ZIP_DEFLATED) as zipzob:
+        zipzob.writestr('codeblob', code_to_exec)
+    codeblob = base64.encodestring(zip_code_obj.getvalue()).replace('\n', '\\\n')
+    mel_code += 'string $codeblob = "\\\n' + codeblob + '";\n'
 
-    tmp_zip_uuid = 'pacmel_%s' % str(uuid.uuid4())
-    py_code = py_code.format(zipname=tmp_zip_uuid,
-                             code=code_to_exec)
-
+    py_code = py_code.format(zipname='pacmel_%s' % str(uuid.uuid4()))
     py_code = py_code.replace('\r\n', '\\n\\\n')
 
     c = """python("%s");""" % py_code

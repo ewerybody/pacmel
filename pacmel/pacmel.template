@@ -1,12 +1,12 @@
 import os, base64, zipfile, StringIO
 _pacmel_dir = os.path.join(os.getenv('TEMP'), '{zipname}')
 _pacmel_files = []
-_fob = StringIO.StringIO()
+_fob, _cob = StringIO.StringIO(), StringIO.StringIO()
 _fob.write(base64.decodestring('" + $zipblob + "'))
+_cob.write(base64.decodestring('" + $codeblob + "'))
 with zipfile.ZipFile(_fob, 'r') as tmpzip:
     for f in tmpzip.namelist():
-        tmpzip.extract(f, _pacmel_dir)
-        _pacmel_files.append(os.path.join(_pacmel_dir, f))
-def _pacmel_call(_pacmel_dir, _pacmel_files):
-    {code}
-_pacmel_call(_pacmel_dir, _pacmel_files)
+        _pacmel_files.append(tmpzip.extract(f, _pacmel_dir))
+with zipfile.ZipFile(_cob, 'r') as tmpzip:
+    _code_blob = tmpzip.read('codeblob')
+exec(_code_blob, {{'_pacmel_dir': _pacmel_dir, '_pacmel_files': _pacmel_files}})
