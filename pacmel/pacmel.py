@@ -70,7 +70,7 @@ def pac(files, mel, code_to_exec):
 
     # encode into mel
     mel_string = base64.encodestring(zip_file_obj.getvalue()).replace('\n', '\\\n')
-    mel_code = 'string $blob = "%s";\n\n' % mel_string
+    mel_code = 'string $zipblob = "\\\n%s";\n' % mel_string
 
     # append and format python code
     with open(_TEMPLATE_PATH, 'r') as fobj:
@@ -85,8 +85,8 @@ def pac(files, mel, code_to_exec):
     code_to_exec = code_to_exec.replace('\\', '\\\\')
     code_to_exec = code_to_exec.replace('"', '\\')
 
-    tmp_zip_name = 'pacmel_%s.zip' % str(uuid.uuid4())
-    py_code = py_code.format(zipname=tmp_zip_name,
+    tmp_zip_uuid = 'pacmel_%s' % str(uuid.uuid4())
+    py_code = py_code.format(zipname=tmp_zip_uuid,
                              code=code_to_exec)
 
     py_code = py_code.replace('\r\n', '\\n\\\n')
