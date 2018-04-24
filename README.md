@@ -1,5 +1,4 @@
-# pacmel
-Maya package creation utility
+# pacmel - a Maya package creation utility
 
 You give it:
 * a bunch of file paths
@@ -15,6 +14,6 @@ When dropped:
   * `_pacmel_dir`
   * `_pacmel_files`
 
-Yet another tool for tools ... pacmel started off as a tiny part in another spare time project: melDrop which is supposed to be a kind of package manager ui for the Maya 3D software.
+Yet another tool for tools ... pacmel started off as a tiny part in another spare time project: [melDrop](https://github.com/ewerybody/melDrop) which is supposed to be a kind of package manager ui for the Maya 3D software.
 
 In contrast to melDrop pacmel now has a nice and tiny functional scope. 
