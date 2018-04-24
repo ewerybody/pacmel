@@ -1,0 +1,145 @@
+"""
+pacmel installation script
+"""
+
+print('pacmel installation script __name__: %s' % __name__)
+
+
+def _check_pacmel_installation():
+    import os
+    import hashlib
+    import traceback
+    from maya import cmds
+
+    def install(path):
+        pacmel_subdir = os.path.join(_pacmel_dir, 'pacmel')
+        os.rename(pacmel_subdir, path)
+        os.rmdir(_pacmel_dir)
+        if not os.path.isdir(_pacmel_dir):
+            print('pacmel temp dir removed!')
+        if os.path.isdir(path):
+            print('pacmel installed to: %s' % path)
+
+    def file_hash(path):
+        with open(path, 'rb') as fob:
+            buff = fob.read(65536)
+            hashob = hashlib.sha256()
+            while len(buff):
+                hashob.update(buff)
+                buff = fob.read(65536)
+            return hashob.digest()
+
+    def reload_pacmel():
+        remove_module()
+        import pacmel
+        reload(pacmel)
+        print('pacmel module loaded! (%s)' % os.path.dirname(pacmel.__file__))
+
+    def remove_module():
+        import sys
+        for mod in [m for m in sys.modules if m.startswith('pacmel')]:
+            del sys.modules[mod]
+        try:
+            del sys.modules['__main__'].pacmel
+        except Exception:
+            pass
+
+    def remove_pacmel():
+        import uuid
+        import shutil
+        import pacmel
+        install_path = os.path.dirname(pacmel.__file__)
+        tmp_dir = os.path.join(os.getenv('TEMP'), str(uuid.uuid4()))
+        os.rename(install_path, tmp_dir)
+        shutil.rmtree(tmp_dir)
+        if not os.path.isdir(tmp_dir):
+            print('pacmel successfully removed! (%s)' % install_path)
+        remove_module()
+
+    try:
+        import pacmel
+        install_path = os.path.dirname(pacmel.__file__)
+        if not os.path.isdir(install_path):
+            print('pacmel module found but path is inexistent: %s' % install_path)
+            install_path = None
+    except ImportError:
+        usd_path = os.path.join(cmds.internalVar(userScriptDir=True), 'pacmel')
+        if os.path.isdir(usd_path):
+            print('pacmel module did not import but path is existent: %s' % usd_path)
+            install_path = usd_path
+        else:
+            install_path = None
+
+    if install_path is None:
+        print('pacmel is NOT installed! Asking to install ...')
+        result = cmds.confirmDialog(
+            title='pacmel install!', icon='information',
+            message=('pacmel can be installed now! Do you want to continue?'),
+            button=['OK', 'Cancel'])
+
+        if result == 'OK':
+            install_path = os.path.join(cmds.internalVar(userScriptDir=True), 'pacmel')
+            install(install_path)
+            reload_pacmel()
+
+    else:
+        print('pacmel IS installed! Checking for differences ...')
+
+        is_different = False
+        installed_files = os.listdir(install_path)
+        pac_bases = [os.path.basename(f) for f in _pacmel_files]
+        diff = list(set(pac_bases).symmetric_difference(installed_files))
+        if diff:
+            is_different = True
+            print('pacmel is different! Other files found! (%s)' % (', '.join(diff)))
+        else:
+            for i, file_path in enumerate(_pacmel_files):
+                inst_path = os.path.join(install_path, pac_bases[i])
+                if file_hash(file_path) != file_hash(inst_path):
+                    diff.append(pac_bases[i])
+            if diff:
+                is_different = True
+                print('pacmel is different! Found difference in files! (%s)' % (', '.join(diff)))
+
+        if not is_different:
+            result = cmds.confirmDialog(
+                title='pacmel is up-to-date!', icon='information',
+                message=('pacmel is already installed and\n'
+                         'there were no differences found!'),
+                button=['OK', 'Uninstall', 'Cancel'])
+
+            if result == 'Uninstall':
+                try:
+                    pacmel.uninstall()
+                except AttributeError:
+                    remove_pacmel()
+
+        else:
+            result = cmds.confirmDialog(
+                title='pacmel has changes!', icon='question',
+                message=('pacmel is installed already but there were some\n'
+                         'differences found! Do you want me to update it?'),
+                button=['OK', 'Cancel'])
+
+            if result == 'OK':
+                try:
+                    remove_pacmel()
+                except Exception as error:
+                    print(traceback.format_exc().strip())
+                    cmds.confirmDialog(
+                        title='pacmel error!', icon='critical',
+                        message=('There was an error while trying to remove the\n'
+                                 'previous version of pacmel! Please try to remove\n'
+                                 'it manually and installing again.\n\n' + str(error)))
+                    return
+
+                install(install_path)
+                reload_pacmel()
+
+
+if __name__ == '__main__':
+    raise RuntimeError('This file should NOT run on its own!\n  It is to be used '
+                       'as a code snippet source for the pacmel installation!')
+else:
+    _check_pacmel_installation()
+    del _check_pacmel_installation
