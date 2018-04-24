@@ -1,16 +1,17 @@
 """
-melDrop.pacmel
-Super simple Maya deployment utility.
+pacmel - Maya deployment utility.
+https://github.com/ewerybody/pacmel
 
 You give it a bunch of files,
-a snippet of code to execute and
-a target mel file name.
+a target mel file name and
+a snippet of code to execute.
 
-It zips the given files, base64 encodes them along with the code snippet
-and creates a Maya droppable mel file.
+It zips the given files, base64 encodes them along with the
+code snippet and creates a Maya droppable mel file.
 
 When dropped onto maya the mel code hands the base64 to python
-which decodes, extracts to temp and calls the snippet with a list of the files given.
+which decodes, extracts to temp and calls the snippet with a
+list of the files given.
 
 @created: 14.04.2016
 @author: eric
@@ -105,7 +106,7 @@ def pac_dir(path, mel, code_to_exec):
 
     and hand it to pacmel.
 
-    :param str path: String path to existing.
+    :param str path: String path to directory.
     :param str mel: target mel file path
     :param str code_to_exec: String snippet to execute after the extraction, or
         string path to a .py-file which would be read instead.
@@ -113,6 +114,26 @@ def pac_dir(path, mel, code_to_exec):
     if not os.path.isdir(path):
         raise RuntimeError('Given path is not an existing directory! (%s)' % path)
 
+    file_tuples = get_dir_file_tuple(path)
+    if not file_tuples:
+        raise RuntimeError('There were no files to collect at given path! (%s)' % path)
+
+    pac(file_tuples, mel, code_to_exec)
+
+
+def get_dir_file_tuple(path):
+    """
+    From a given path assembles the needed list of file tuple to be used
+    by pacmel which is like (actual_path, archive_path) per item.::
+
+        [(fullpath/dirname/filename1, dirname/filename1),
+         (fullpath/dirname/filename2, dirname/filename2),
+         ...]
+
+    :param str path: String path to directory.
+    :return: List of tuples with (absolute file path/ archive path).
+    :rtype: list
+    """
     parent_dir = os.path.dirname(path)
     file_tuples = []
     for dirpath, _, filenames in os.walk(path):
@@ -120,7 +141,4 @@ def pac_dir(path, mel, code_to_exec):
             filepath = os.path.join(dirpath, filename)
             arcpath = os.path.relpath(filepath, parent_dir)
             file_tuples.append((filepath, arcpath))
-    if not file_tuples:
-        raise RuntimeError('There were no files to collect at given path! (%s)' % path)
-
-    pac(file_tuples, mel, code_to_exec)
+    return file_tuples
