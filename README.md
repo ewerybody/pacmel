@@ -1,4 +1,4 @@
-# pacmel - a Maya package creation utility
+# **pacmel** - a Maya package creation utility
 
 You give it:
 * a bunch of file paths
